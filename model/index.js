@@ -1,90 +1,40 @@
-// const shortid = require('shortid')
-const fs = require('fs/promises')
-const path = require('path')
-const shortid = require('shortid')
-const contacts = path.join(__dirname, './contacts.json')
+const Contact = require('../utils/schemas/contact')
 
 const listContacts = async () => {
-  try {
-    const response = await fs.readFile(contacts)
-    const result = JSON.parse(response)
-    return result
-  } catch (error) {
-    console.error(error)
-  }
+  const response = await Contact.find({})
+  return response
 }
 
-const getContactById = async (contactId) => {
-  try {
-    const response = await fs.readFile(contacts)
-    const result = JSON.parse(response)
-    const findContact = result.find(({ id }) => id.toString() === contactId)
-
-    return findContact
-  } catch (error) {
-    console.log(error)
-  }
+const getContactById = async id => {
+  const response = await Contact.findById(id)
+  return response
 }
 
-const removeContact = async (contactId) => {
-  try {
-    const response = await fs.readFile(contacts)
-    const result = JSON.parse(response)
-    const exist = result.find(({ id }) => id.toString() === contactId)
-    if (exist) {
-      console.log('asd')
-      const newContactsList = result.filter(
-        ({ id }) => id.toString() !== contactId
-      )
-
-      fs.writeFile(contacts, JSON.stringify(newContactsList), (error) => {
-        if (error) throw error
-      })
-
-      return `contact with id ${contactId} removed `
-    }
-  } catch (error) {
-    console.error(error)
-  }
+const removeContact = async id => {
+  const response = Contact.findByIdAndRemove(id)
+  return response
 }
 
-const addContact = async (body) => {
-  try {
-    const response = await fs.readFile(contacts)
-    const result = JSON.parse(response)
-    const newContact = { id: shortid.generate(), ...body }
-    result.push(newContact)
-
-    fs.writeFile(contacts, JSON.stringify(result), (error) => {
-      if (error) throw error
-    })
-
-    return newContact
-  } catch (error) {
-    console.error(error)
-  }
+const addContact = async data => {
+  const response = Contact.create(data)
+  return response
 }
 
-const updateContact = async (contactId, body) => {
-  const response = await fs.readFile(contacts)
-  const result = JSON.parse(response)
-  const update = result.map((contact) => {
-    return contact.id.toString() === contactId
-      ? { id: contact.id, ...body }
-      : contact
-  })
+const updateContact = async (id, body) => {
+  const responce = Contact.findByIdAndUpdate(id, body, { new: true })
+  return responce
+}
 
-  fs.writeFile(contacts, JSON.stringify(update), (error) => {
-    if (error) throw error
-  })
-
-  return body.name
+const updateStatusContact = async (id, body) => {
+  const responce = Contact.findByIdAndUpdate(id, body, { new: true })
+  return responce
 }
 
 module.exports = {
   listContacts,
   getContactById,
-  removeContact,
   addContact,
+  removeContact,
   updateContact,
+  updateStatusContact,
 }
