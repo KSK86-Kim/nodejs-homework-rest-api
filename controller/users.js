@@ -1,22 +1,28 @@
 const { User } = require('../model')
 const jwt = require('jsonwebtoken')
+const Jimp = require('jimp')
+const path = require('path')
+const fs = require('fs')
+// const { users: resvice } = require("./")
+const { avatarDir } = require('../helpers/path')
+
 require('dotenv').config()
 
 const secret = process.env.SECRET
 
 const register = async (req, res, next) => {
-  const { password, email } = req.body
-  const user = await User.findOne({ email })
-  if (user) {
-    res.json({
-      message: 'conflict',
-      status: 409,
-      data: {
-        result: 'email in use'
-      }
-    })
-  }
   try {
+    const { password, email } = req.body
+    const user = await User.findOne({ email })
+    if (user) {
+      return res.status(409).json({
+        status: 'error',
+        code: 409,
+        message: 'Email in use',
+        data: 'Conflict',
+      })
+    }
+
     const newUser = new User({ email })
     newUser.setPassword(password)
     await newUser.save()
@@ -25,7 +31,8 @@ const register = async (req, res, next) => {
       status: 201,
       data: {
         result: 'user registration successful',
-        user: newUser
+        user: newUser,
+        avatarURL: newUser.avatarURL,
       }
     })
   } catch (error) {
@@ -88,9 +95,53 @@ const currentUser = async (req, res, next) => {
   })
 }
 
+const updateAvatar = async(req, res, next) => {
+  const id = req.user.id
+  try {
+    if (req.file) {
+      const { path: tempName, originalname } = req.file
+      const img = await Jimp.read(tempName)
+      img
+        .autocrop()
+        .cover(
+          250,
+          250,
+          Jimp.HORIZONTAL_ALIGN_CENTER || Jimp.VERTICAL_ALIGN_MIDDLE
+        )
+        .writeAsync(tempName)
+      const newFileName = path.join(avatarDir, `${id}_${originalname}`)
+
+      const oldAvatar = (await fs.readdir(avatarDir)).find((fileName) =>
+        fileName.includes(id)
+      )
+      const avatarForDeleted = path.join(avatarDir, oldAvatar)
+      fs.unlink(avatarForDeleted)
+      fs.rename(tempName, newFileName)
+      const updateA = (id, newFileName) => {
+        
+      }
+      const { avatarURL: newAvatarUrl } = await updateA(
+        id,
+        newFileName
+      )
+      return res.json({
+        status: 'success',
+        code: 200,
+        data: {
+          // avatarURL: newAvatarUrl,
+
+        },
+      })
+    }
+  } catch (error) {
+
+  }
+}
+
 module.exports = {
   register,
   login,
   logout,
-  currentUser
+  currentUser,
+  updateAvatar
 }

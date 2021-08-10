@@ -1,7 +1,7 @@
 const express = require('express')
 const logger = require('morgan')
 const cors = require('cors')
-
+const path = require('path')
 const api = require('./router/api')
 
 const app = express()
@@ -15,6 +15,10 @@ app.use(express.json())
 app.use('/api/contacts', api.contacts)
 app.use('/api/users', api.users)
 
+app.use(
+  '/avatars',
+  express.static(path.join(process.cwd(), 'public', 'avatars'))
+)
 app.use((req, res) => {
   res.status(404).json({ message: 'Not found' })
 })
