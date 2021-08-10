@@ -1,6 +1,10 @@
 const { User } = require('../model')
 const jwt = require('jsonwebtoken')
+const Jimp = require('jimp')
+const fs = require('fs/promises')
+const { avatarDir } = require('../helpers/staticPath')
 require('dotenv').config()
+const path = require('path')
 
 const secret = process.env.SECRET
 
@@ -25,7 +29,8 @@ const register = async (req, res, next) => {
       status: 201,
       data: {
         result: 'user registration successful',
-        user: newUser
+        user: newUser,
+        avatar: newUser.avatarURL,
       }
     })
   } catch (error) {
@@ -83,14 +88,50 @@ const currentUser = async (req, res, next) => {
     message: 'success',
     data: {
       email: req.user.email,
-      subscription: req.user.subscription
+      subscription: req.user.subscription,
+      avatarURL: req.user.avatarURL
     }
   })
+}
+const updateAvatar = async (req, res, next) => {
+  let avatarURL
+  if (req.file) {
+    const newNameAvatar = `${Date.now()}-${req.file.originalname}`
+
+    const img = await Jimp.read(req.file.path)
+    await img
+      .autocrop()
+      .cover(
+        250,
+        250,
+        Jimp.HORIZONTAL_ALIGN_CENTER | Jimp.VERTICAL_ALIGN_MIDDLE
+      )
+      .writeAsync(req.file.path)
+    await fs.rename(req.file.path, path.join(avatarDir, newNameAvatar))
+    avatarURL = path.join(newNameAvatar)
+  }
+
+  try {
+    const id = String(req.user._id)
+
+    await User.updateOne({ _id: id }, { avatarURL })
+
+    return res.json({
+      status: 'success',
+      code: 200,
+      data: {
+        avatarURL
+      }
+    })
+  } catch (e) {
+    next(e)
+  }
 }
 
 module.exports = {
   register,
   login,
   logout,
-  currentUser
+  currentUser,
+  updateAvatar
 }

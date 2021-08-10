@@ -15,6 +15,12 @@ app.use(express.json())
 app.use('/api/contacts', api.contacts)
 app.use('/api/users', api.users)
 
+const { avatarDir } = require('./helpers/staticPath')
+app.use(
+  '/avatars',
+  express.static(avatarDir)
+)
+
 app.use((req, res) => {
   res.status(404).json({ message: 'Not found' })
 })
